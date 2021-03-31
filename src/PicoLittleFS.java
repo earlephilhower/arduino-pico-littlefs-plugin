@@ -159,25 +159,23 @@ public class PicoLittleFS implements Tool {
   }
 
   private void createAndUpload(){
-    if(!PreferencesData.get("target_platform").contentEquals("esp8266")){
+    if(!PreferencesData.get("target_platform").contentEquals("rp2040")){
       System.err.println();
       editor.statusError("LittleFS Not Supported on "+PreferencesData.get("target_platform"));
       return;
     }
 
-    if(!BaseNoGui.getBoardPreferences().containsKey("build.spiffs_start") || !BaseNoGui.getBoardPreferences().containsKey("build.spiffs_end")){
+    if(!BaseNoGui.getBoardPreferences().containsKey("build.fs_start") || !BaseNoGui.getBoardPreferences().containsKey("build.fs_end")){
       System.err.println();
       editor.statusError("LittleFS Not Defined for "+BaseNoGui.getBoardPreferences().get("name"));
       return;
     }
     long spiStart, spiEnd, spiPage, spiBlock;
     try {
-      spiStart = getIntPref("build.spiffs_start");
-      spiEnd = getIntPref("build.spiffs_end");
-      spiPage = getIntPref("build.spiffs_pagesize");
-      if(spiPage == 0) spiPage = 256;
-      spiBlock = getIntPref("build.spiffs_blocksize");
-      if(spiBlock == 0) spiBlock = 4096;
+      spiStart = getIntPref("build.fs_start");
+      spiEnd = getIntPref("build.fs_end");
+      spiPage = 256;
+      spiBlock = 4096;
     } catch(Exception e){
       editor.statusError(e);
       return;
@@ -192,11 +190,11 @@ public class PicoLittleFS implements Tool {
     else
         mkspiffsCmd = "mklittlefs";
 
-    File tool = new File(platform.getFolder() + "/tools", mkspiffsCmd);
+    File tool = new File(platform.getFolder() + "/system", mkspiffsCmd);
     if (!tool.exists() || !tool.isFile()) {
-      tool = new File(platform.getFolder() + "/tools/mklittlefs", mkspiffsCmd);
+      tool = new File(platform.getFolder() + "/system/mklittlefs", mkspiffsCmd);
       if (!tool.exists()) {
-        tool = new File(PreferencesData.get("runtime.tools.mklittlefs.path"), mkspiffsCmd);
+        tool = new File(PreferencesData.get("runtime.tools.pqt-mklittlefs.path"), mkspiffsCmd);
         if (!tool.exists()) {
             System.err.println();
             editor.statusError("LittleFS Error: mklittlefs not found!");
@@ -205,9 +203,6 @@ public class PicoLittleFS implements Tool {
       }
     }
     
-    Boolean isNetwork = false;
-    File espota = new File(platform.getFolder()+"/tools");
-    File esptool = new File(platform.getFolder()+"/tools");
     String serialPort = PreferencesData.get("serial.port");
     String pythonCmd = PreferencesData.get("runtime.os").contentEquals("windows") ? "python3.exe" : "python3";
     String uploadCmd = "";
@@ -220,7 +215,7 @@ public class PicoLittleFS implements Tool {
     }
 
     // Find upload.py, don't fail if not present for backwards compat
-    File uploadPyFile = new File(platform.getFolder()+"/tools", "upload.py");
+    File uploadPyFile = new File(platform.getFolder()+"/tools", "uf2conv.py");
     if (uploadPyFile.exists() && uploadPyFile.isFile()) {
       uploadCmd = uploadPyFile.getAbsolutePath();
     }
@@ -235,32 +230,6 @@ public class PicoLittleFS implements Tool {
     }
     // pythonCmd now points to either an installed exe with full path or just plain "python3(.exe)"
 
-    //find espota if IP else find esptool
-    if(serialPort.split("\\.").length == 4){
-      isNetwork = true;
-      String espotaCmd = "espota.py";
-      espota = new File(platform.getFolder()+"/tools", espotaCmd);
-      if(!espota.exists() || !espota.isFile()){
-        System.err.println();
-        editor.statusError("LittleFS Error: espota not found!");
-        return;
-      }
-    } else {
-      String esptoolCmd = platform.getTool("esptool").get("cmd");
-      esptool = new File(platform.getFolder()+"/tools", esptoolCmd);
-      if(!esptool.exists() || !esptool.isFile()){
-        esptool = new File(platform.getFolder()+"/tools/esptool", esptoolCmd);
-        if(!esptool.exists()){
-          esptool = new File(PreferencesData.get("runtime.tools.esptool.path"), esptoolCmd);
-          if (!esptool.exists() && uploadCmd.isEmpty()) {
-              System.err.println();
-              editor.statusError("LittleFS Error: esptool not found!");
-              return;
-          }
-        }
-      }
-    }
-    
     //load a list of all files
     int fileCount = 0;
     File dataFolder = new File(editor.getSketch().getFolder(), "data");
@@ -280,11 +249,6 @@ public class PicoLittleFS implements Tool {
     String toolPath = tool.getAbsolutePath();
     String sketchName = editor.getSketch().getName();
     String imagePath = getBuildFolderPath(editor.getSketch()) + "/" + sketchName + ".mklittlefs.bin";
-    String resetMethod = BaseNoGui.getBoardPreferences().get("upload.resetmethod");
-    String uploadSpeed = BaseNoGui.getBoardPreferences().get("upload.speed");
-    String uploadAddress = BaseNoGui.getBoardPreferences().get("build.spiffs_start");
-
-    
 
     Object[] options = { "Yes", "No" };
     String title = "LittleFS Create";
@@ -298,7 +262,7 @@ public class PicoLittleFS implements Tool {
 
     editor.statusNotice("LittleFS Creating Image...");
     System.out.println("[LittleFS] data    : "+dataPath);
-    System.out.println("[LittleFS] size    : "+((spiEnd - spiStart)/1024));
+    System.out.println("[LittleFS] size    : "+((spiEnd - spiStart)/1024) + "KB");
     System.out.println("[LittleFS] page    : "+spiPage);
     System.out.println("[LittleFS] block   : "+spiBlock);
 
@@ -315,28 +279,15 @@ public class PicoLittleFS implements Tool {
     }
 
     editor.statusNotice("LittleFS Uploading Image...");
-    System.out.println("[LittleFS] upload  : "+imagePath);
-    
-    if(isNetwork){
-      System.out.println("[LittleFS] IP      : "+serialPort);
-      System.out.println();
-      sysExec(new String[]{pythonCmd, espota.getAbsolutePath(), "-i", serialPort, "-s", "-f", imagePath});
-    } else {
-      System.out.println("[LittleFS] address : "+uploadAddress);
-      System.out.println("[LittleFS] reset   : "+resetMethod);
-      System.out.println("[LittleFS] port    : "+serialPort);
-      System.out.println("[LittleFS] speed   : "+uploadSpeed);
-      if (!uploadCmd.isEmpty()) {
-        System.out.println("[LittleFS] python   : "+pythonCmd);
-        System.out.println("[LittleFS] uploader : "+uploadCmd);
-      }
+    System.out.println("[LittleFS] upload   : " + imagePath);
+    System.out.println("[LittleFS] address  : " + spiStart + "");
+    System.out.println("[LittleFS] swerial  : " + serialPort);
+    System.out.println("[LittleFS] python   : " + pythonCmd);
+    System.out.println("[LittleFS] uploader : " + uploadCmd);
 
-      System.out.println();
-      if (!uploadCmd.isEmpty()) {
-        sysExec(new String[]{pythonCmd, uploadCmd, "--chip", "esp8266", "--port", serialPort, "--baud", uploadSpeed, "write_flash", uploadAddress, imagePath});
-      } else {
-        sysExec(new String[]{esptool.getAbsolutePath(), "-cd", resetMethod, "-cb", uploadSpeed, "-cp", serialPort, "-ca", uploadAddress, "-cf", imagePath});
-      }
+    System.out.println();
+    if (!uploadCmd.isEmpty()) {
+      sysExec(new String[]{pythonCmd, uploadCmd, "--base", (spiStart - 0 * 0x10000000) + "", "--serial", serialPort, "--family", "RP2040", imagePath});
     }
   }
 
