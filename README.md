@@ -24,7 +24,7 @@ On the OS X create the tools directory in `~/Documents/Arduino/` and unpack the 
 
 ## Screenshot
 
-![Screenshot](screenshot.png)
+
 
 ## Credits and license
 
