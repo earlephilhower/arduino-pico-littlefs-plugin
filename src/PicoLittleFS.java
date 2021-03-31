@@ -99,12 +99,12 @@ public class PicoLittleFS implements Tool {
       public void run() {
         try {
           if(listenOnProcess(arguments) != 0){
-            editor.statusError("LittleFS Upload failed!");
+            editor.statusError("LittleFS Upload failed! Did you close the Serial Monitor?");
           } else {
             editor.statusNotice("LittleFS Image Uploaded");
           }
         } catch (Exception e){
-          editor.statusError("LittleFS Upload failed!");
+          editor.statusError("LittleFS Upload failed! Did you close the Serial Monitor?");
         }
       }
     };
@@ -220,7 +220,7 @@ public class PicoLittleFS implements Tool {
       uploadCmd = uploadPyFile.getAbsolutePath();
     }
     // Find python.exe if present, don't fail if not found for backwards compat
-    String[] paths = { platform.getFolder()+"/tools", platform.getFolder()+"/tools/python3", PreferencesData.get("runtime.tools.python3.path") };
+    String[] paths = { platform.getFolder()+"/system", platform.getFolder()+"/system/python3", PreferencesData.get("runtime.tools.pqt-python3.path") };
     for (String s: paths) {
       File toolPyFile = new File(s, pythonCmd);
       if (toolPyFile.exists() && toolPyFile.isFile() && toolPyFile.canExecute()) {
