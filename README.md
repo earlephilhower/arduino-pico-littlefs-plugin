@@ -23,8 +23,7 @@ On the OS X create the tools directory in `~/Documents/Arduino/` and unpack the 
   When done, IDE status bar will display LittleFS Image Uploaded message. Might take a few minutes for large file system sizes.
 
 ## Screenshot
-
-
+![Screenshot](screenshot2.png)
 
 ## Credits and license
 
