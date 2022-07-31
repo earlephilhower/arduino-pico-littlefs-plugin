@@ -8,7 +8,7 @@ and uploads the image to Raspberry Pi Pico RP2040 flash memory.
 - Make sure you use one of the supported versions of Arduino IDE and have the Arduino-Pico core (https://github.com/earlephilhower/arduino-pico) installed.
 - Download the tool archive from (https://github.com/earlephilhower/arduino-pico-littlefs-plugin/releases).
 - In your Arduino sketchbook directory, create tools directory if it doesn't exist yet.
-- Unpack the tool into tools directory (the path will look like `<home_dir>/Arduino/tools/ESP8266LittleFS/tool/esp8266littlefs.jar)`.
+- Unpack the tool into tools directory (the path will look like `<home_dir>/Arduino/tools/PicoLittleFS/tool/picolittlefs.jar)`.
 - Restart Arduino IDE.
 
 On the OS X create the tools directory in `~/Documents/Arduino/` and unpack the files there.
