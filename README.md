@@ -5,7 +5,7 @@ and uploads the image to Raspberry Pi Pico RP2040 flash memory.
 <br>
 
 ## Arduino IDE 2.x users
-Please see the [arduino-littlefs-plugin](https://github.com/earlephilhower/arduino-littlefs-upload) for use under IDE 2.2.1 or lateer
+Please see the [arduino-littlefs-plugin](https://github.com/earlephilhower/arduino-littlefs-upload) for use under IDE 2.2.1 or later
 
 ## Installation
 - Make sure you use one of the supported versions of Arduino IDE and have the Arduino-Pico core (https://github.com/earlephilhower/arduino-pico) installed.
